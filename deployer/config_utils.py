@@ -18,5 +18,8 @@ def get_systemd_config(app_name):
     return env.get_template('systemd.service').render(app_name=app_name)
 
 
-def get_uwsgi_config(app_name):
-    return env.get_template('uwsgi.ini').render(app_name=app_name)
+def get_uwsgi_config(app_name, runnable=None):
+    return env.get_template('uwsgi.ini').render(
+        app_name=app_name,
+        runnable=runnable
+    )

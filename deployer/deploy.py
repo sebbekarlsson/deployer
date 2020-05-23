@@ -27,13 +27,11 @@ def download_file(url, dest):
         with open(dest, 'wb') as f:
             r.raw.decode_content = True
             shutil.copyfileobj(r.raw, f)
-    elif r.status_code == 303:
-        logging.info('neger')
     else:
         logging.info(f'Could not download {url}')
 
 
-def deploy(clone_url, app_name, server_names, app_type):
+def deploy(clone_url, app_name, server_names, app_type, runnable=None):
     raise_if_not_nginx()
 
     app_path = os.path.join(constants.SERVER_APPLICATION_PATH, app_name)
@@ -83,7 +81,7 @@ def deploy(clone_url, app_name, server_names, app_type):
                 constants.SERVER_APPLICATION_PATH, app_name, 'uwsgi.ini'
             ),
             'w+'
-        ).write(config_utils.get_uwsgi_config(app_name))
+        ).write(config_utils.get_uwsgi_config(app_name, runnable=runnable))
     
     logging.info('5. Creating SSL certs')
     logging.info(subprocess.Popen(
