@@ -1,0 +1,24 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {% for name in server_names %}{{ name }} {% endfor %};
+
+    client_max_body_size 300M;
+
+    {% if app_type == 'python' %}
+        location / {
+            include uwsgi_params;
+            uwsgi_pass unix:/var/run/{{ app_name }}.sock;
+        }
+    {% else %}
+        location / {
+            index index.html index.htm;
+            root /var/www/{{ app_name }}/{{ app_name }}/{{ public }};
+        }
+    {% endif %}
+
+    location ~ /.well-known {
+        root /var/www/{{ app_name }}/{{ app_name }};
+        allow all;
+    }
+}

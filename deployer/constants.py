@@ -1,0 +1,6 @@
+SERVER_APPLICATION_PATH = '/var/www'
+SERVER_SYSTEMD_PATH = '/etc/systemd/system'
+SERVER_SOCKET_PATH = '/var/run'
+SERVER_NGINX_AVAIL_PATH = '/etc/nginx/sites-available'
+SERVER_NGINX_ENABLED_PATH = '/etc/nginx/sites-enabled'
+SERVER_LOG_PATH = '/var/log'

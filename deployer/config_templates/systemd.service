@@ -1,0 +1,9 @@
+[Unit]
+Description=uWSGI instance to serve {{ app_name }}
+
+[Service]
+User=root
+ExecStart=/bin/bash -c 'cd /var/www/{{ app_name }}/; uwsgi --ini uwsgi.ini 2>&1'
+
+[Install]
+WantedBy=multi-user.target
