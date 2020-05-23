@@ -13,12 +13,7 @@ server {
     {% else %}
         location / {
             index index.html index.htm;
-            root /var/www/{{ app_name }}/{{ app_name }}/{{ public }};
+            root /var/www/{{ app_name }};
         }
     {% endif %}
-
-    location ~ /.well-known {
-        root /var/www/{{ app_name }}/{{ app_name }};
-        allow all;
-    }
 }

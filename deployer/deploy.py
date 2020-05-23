@@ -9,11 +9,28 @@ import logging
 import os
 import subprocess
 
+import shutil
+import requests
+
 
 def raise_if_not_nginx():
     if not os.path.isdir(constants.SERVER_NGINX_AVAIL_PATH)\
             or not os.path.isdir(constants.SERVER_NGINX_ENABLED_PATH):
         raise Exception('Nginx is not installed')
+
+
+def download_file(url, dest):
+    r = requests.get(url, stream=True, allow_redirects=True)
+
+    if r.status_code == 200:
+        logging.info(f'Downloading {url} to {dest}...')
+        with open(dest, 'wb') as f:
+            r.raw.decode_content = True
+            shutil.copyfileobj(r.raw, f)
+    elif r.status_code == 303:
+        logging.info('neger')
+    else:
+        logging.info(f'Could not download {url}')
 
 
 def deploy(clone_url, app_name, server_names, app_type):
@@ -23,10 +40,13 @@ def deploy(clone_url, app_name, server_names, app_type):
 
     logging.info('1. Cloning repo')
 
-    if not os.path.isdir(app_path):
-        clone(clone_url, app_path)
+    if '.zip' in clone_url:
+        download_file(clone_url, app_path)
     else:
-        pull(app_path)
+        if not os.path.isdir(app_path):
+            clone(clone_url, app_path)
+        else:
+            pull(app_path)
     
     logging.info('2. Creatng nginx files')
     open(
@@ -48,21 +68,22 @@ def deploy(clone_url, app_name, server_names, app_type):
         stdout=subprocess.PIPE
     ).stdout.read()
     
-    logging.info('3. Creating systemd files')
-    open(
-        os.path.join(
-            constants.SERVER_SYSTEMD_PATH, f'{app_name}.service'
-        ),
-        'w+'
-    ).write(config_utils.get_systemd_config(app_name))
-    
-    logging.info('4. Creating uwsgi files')
-    open(
-        os.path.join(
-            constants.SERVER_APPLICATION_PATH, app_name, 'uwsgi.ini'
-        ),
-        'w+'
-    ).write(config_utils.get_uwsgi_config(app_name))
+    if app_type == 'python':
+        logging.info('3. Creating systemd files')
+        open(
+            os.path.join(
+                constants.SERVER_SYSTEMD_PATH, f'{app_name}.service'
+            ),
+            'w+'
+        ).write(config_utils.get_systemd_config(app_name))
+        
+        logging.info('4. Creating uwsgi files')
+        open(
+            os.path.join(
+                constants.SERVER_APPLICATION_PATH, app_name, 'uwsgi.ini'
+            ),
+            'w+'
+        ).write(config_utils.get_uwsgi_config(app_name))
     
     logging.info('5. Creating SSL certs')
     subprocess.Popen(
@@ -71,18 +92,22 @@ def deploy(clone_url, app_name, server_names, app_type):
         stdout=subprocess.PIPE
     ).stdout.read()
     
-    logging.info('6. Installing')
-    python_utils.create_python_venv(app_path)
-    python_utils.run_python_setup(app_path)
-    
-    logging.info('6. Starting services')
-    subprocess.Popen('systemctl daemon-reload', shell=True, stdout=subprocess.PIPE).stdout.read()  # NOQA E501
-    subprocess.Popen(f'systemctl restart {app_name}.service', shell=True, stdout=subprocess.PIPE).stdout.read()  # NOQA E501
+    if app_type == 'python':
+        logging.info('6. Installing')
+        python_utils.create_python_venv(app_path)
+        python_utils.run_python_setup(app_path)
+        
+        logging.info('7. Starting services')
+        subprocess.Popen('systemctl daemon-reload', shell=True, stdout=subprocess.PIPE).stdout.read()  # NOQA E501
+        subprocess.Popen(f'systemctl restart {app_name}.service', shell=True, stdout=subprocess.PIPE).stdout.read()  # NOQA E501
+
     subprocess.Popen('systemctl reload nginx', shell=True, stdout=subprocess.PIPE).stdout.read()  # NOQA E501
-    subprocess.Popen(
-        'chmod -R 777 {}'.format(
-            os.path.join(constants.SERVER_SOCKET_PATH, f'{app_name}.sock')
-        ),
-        shell=True,
-        stdout=subprocess.PIPE
-    ).stdout.read()
+
+    if app_type == 'python':
+        subprocess.Popen(
+            'chmod -R 777 {}'.format(
+                os.path.join(constants.SERVER_SOCKET_PATH, f'{app_name}.sock')
+            ),
+            shell=True,
+            stdout=subprocess.PIPE
+        ).stdout.read()

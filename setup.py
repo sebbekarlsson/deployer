@@ -5,6 +5,7 @@ setup(
     name='deployer',
     version='1.0.0',
     install_requires=[
+        'requests',
         'pytest',
         'jinja2',
         'gitpython'
