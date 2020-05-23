@@ -86,11 +86,11 @@ def deploy(clone_url, app_name, server_names, app_type):
         ).write(config_utils.get_uwsgi_config(app_name))
     
     logging.info('5. Creating SSL certs')
-    subprocess.Popen(
-        'cerbot --nginx' + '-d '.join(server_names),
+    logging.info(subprocess.Popen(
+        'certbot --nginx --redirect --break-my-certs --register-unsafely-without-email ' + ' '.join(['-d ' + sname for sname in server_names]),
         shell=True,
         stdout=subprocess.PIPE
-    ).stdout.read()
+    ).stdout.read())
     
     if app_type == 'python':
         logging.info('6. Installing')
